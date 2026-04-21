@@ -6,8 +6,14 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="mobile-web-app-capable" content="yes" />
-<meta name="theme-color" content="#000000" />
-<title>Pong</title>
+<meta name="theme-color" content="#0F2340" />
+<meta name="apple-mobile-web-app-title" content="Aggies Pong" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<link rel="apple-touch-icon" sizes="120x120" href="apple-touch-icon-120.png" />
+<link rel="apple-touch-icon" sizes="152x152" href="apple-touch-icon-152.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+<link rel="icon" type="image/png" href="apple-touch-icon.png" />
+<title>Aggies Pong</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
@@ -84,6 +90,12 @@
   const ctx = canvas.getContext('2d');
   const overlay = document.getElementById('overlay');
   const startBtn = document.getElementById('startBtn');
+
+  // Court background image
+  const courtImg = new Image();
+  let courtReady = false;
+  courtImg.onload = () => { courtReady = true; draw(); };
+  courtImg.src = 'usu_basketball_court.png';
 
   let W = 0, H = 0, DPR = 1;
   function resize() {
@@ -247,10 +259,24 @@
   }
 
   function draw() {
+    // Background: court image (cover) or black fallback
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, W, H);
+    if (courtReady) {
+      const iw = courtImg.naturalWidth;
+      const ih = courtImg.naturalHeight;
+      const scale = Math.max(W / iw, H / ih);
+      const dw = iw * scale;
+      const dh = ih * scale;
+      const dx = (W - dw) / 2;
+      const dy = (H - dh) / 2;
+      ctx.drawImage(courtImg, dx, dy, dw, dh);
+      // Slight dim so paddles/ball/score stay readable
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.fillRect(0, 0, W, H);
+    }
 
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
     ctx.lineWidth = 2;
     ctx.setLineDash([8, 12]);
     ctx.beginPath();
@@ -259,25 +285,33 @@
     ctx.stroke();
     ctx.setLineDash([]);
 
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
     ctx.font = `bold ${Math.floor(Math.min(W, H) * 0.18)}px -apple-system, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(state.cpuScore, W / 2, H / 2 - H * 0.12);
     ctx.fillText(state.playerScore, W / 2, H / 2 + H * 0.12);
 
+    // Paddles — outlined so they pop against the court
     ctx.fillStyle = '#fff';
+    ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+    ctx.lineWidth = 2;
     const playerY = H - 40 - state.paddleH;
     const cpuY = 40;
-    roundRect(state.cpuX, cpuY, state.paddleW, state.paddleH, 6);
-    roundRect(state.playerX, playerY, state.paddleW, state.paddleH, 6);
+    roundRect(state.cpuX, cpuY, state.paddleW, state.paddleH, 6, true);
+    roundRect(state.playerX, playerY, state.paddleW, state.paddleH, 6, true);
 
+    // Ball
     ctx.beginPath();
     ctx.arc(state.ball.x, state.ball.y, state.ball.r, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff';
     ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+    ctx.stroke();
   }
 
-  function roundRect(x, y, w, h, r) {
+  function roundRect(x, y, w, h, r, stroke) {
     ctx.beginPath();
     ctx.moveTo(x + r, y);
     ctx.arcTo(x + w, y, x + w, y + h, r);
@@ -286,6 +320,7 @@
     ctx.arcTo(x, y, x + w, y, r);
     ctx.closePath();
     ctx.fill();
+    if (stroke) ctx.stroke();
   }
 
   function loop(now) {
